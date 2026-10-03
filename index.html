@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE LION • Admin Panel</title>
+<style>
+  :root {
+    --bg-dark: #0D0408;
+    --bg-darker: #08020A;
+    --red-primary: #FF1E5C;
+    --red-glow: #FF4D79;
+    --red-deep: #6B0A24;
+    --red-soft: #8A0F30;
+    --text-white: #FFFFFF;
+    --text-pink: #FFB3C6;
+    --text-muted: #B38A9A;
+    --border-glow: rgba(255, 30, 92, 0.4);
+    --border-soft: rgba(255, 51, 102, 0.4);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(circle at 20% 10%, #1A0408 0%, #0D0408 40%, #08020A 100%);
+    color: var(--text-white);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 20% 30%, #fff, transparent),
+      radial-gradient(1px 1px at 60% 70%, #FF4D79, transparent),
+      radial-gradient(1px 1px at 80% 10%, #fff, transparent),
+      radial-gradient(2px 2px at 40% 50%, #FF1E5C, transparent),
+      radial-gradient(1px 1px at 90% 80%, #FFB3C6, transparent),
+      radial-gradient(1px 1px at 15% 85%, #fff, transparent);
+    background-size: 400px 400px, 500px 500px, 600px 600px, 350px 350px, 450px 450px, 550px 550px;
+    opacity: 0.5;
+    pointer-events: none;
+    animation: drift 60s linear infinite;
+    z-index: 0;
+  }
+  @keyframes drift {
+    0% { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; }
+    100% { background-position: 400px 400px, -500px 500px, 600px -600px, -350px 350px, 450px -450px, -550px 550px; }
+  }
+  #loginScreen {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 10; padding: 20px;
+  }
+  .login-box {
+    width: 100%; max-width: 420px;
+    background: linear-gradient(180deg, rgba(13,4,8,0.95), rgba(26,4,8,0.95));
+    border: 2px solid var(--red-primary);
+    border-radius: 22px;
+    padding: 40px 32px;
+    box-shadow: 0 0 40px rgba(255, 30, 92, 0.4), inset 0 0 30px rgba(255, 30, 92, 0.05);
+    animation: boxPulse 3s ease-in-out infinite alternate;
+  }
+  @keyframes boxPulse {
+    0% { box-shadow: 0 0 40px rgba(255,30,92,0.35); }
+    100% { box-shadow: 0 0 60px rgba(255,30,92,0.55); }
+  }
+  .logo-title {
+    text-align: center; font-size: 28px; font-weight: 800;
+    letter-spacing: 0.25em; color: #fff;
+    text-shadow: 0 0 20px var(--red-primary), 0 0 40px var(--red-primary);
+    margin-bottom: 8px;
+  }
+  .logo-accent {
+    width: 80px; height: 3px;
+    background: linear-gradient(90deg, transparent, var(--red-primary), transparent);
+    margin: 0 auto 12px; border-radius: 2px;
+  }
+  .logo-sub {
+    text-align: center; font-size: 11px;
+    letter-spacing: 0.4em; color: var(--red-glow);
+    font-weight: 700; margin-bottom: 36px;
+  }
+  .field { margin-bottom: 18px; }
+  .field label {
+    display: block; font-size: 10px;
+    letter-spacing: 0.2em; color: var(--red-glow);
+    font-weight: 700; margin-bottom: 8px; padding-left: 4px;
+  }
+  .field input {
+    width: 100%; height: 54px;
+    background: rgba(26,5,8,0.8);
+    border: 1px solid rgba(255, 51, 102, 0.4);
+    border-radius: 14px; padding: 0 18px;
+    color: #fff; font-size: 14px; outline: none;
+    transition: all 0.2s;
+  }
+  .field input:focus {
+    border-color: var(--red-primary);
+    box-shadow: 0 0 20px rgba(255, 30, 92, 0.3);
+  }
+  .btn {
+    width: 100%; height: 56px;
+    background: linear-gradient(90deg, #FF1E5C, #8A0F30);
+    border: none; border-radius: 14px;
+    color: #fff; font-size: 14px; font-weight: 800;
+    letter-spacing: 0.2em; cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 8px 24px rgba(255, 30, 92, 0.4);
+    margin-top: 8px;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(255, 30, 92, 0.6); }
+  .btn:active { transform: translateY(0); }
+  .btn.loading { pointer-events: none; opacity: 0.7; }
+  .error-msg {
+    color: #FF6B6B; font-size: 12px;
+    text-align: center; margin-top: 14px; min-height: 18px;
+    font-weight: 600;
+  }
+  #dashboard {
+    display: none;
+    position: relative; z-index: 5;
+    min-height: 100vh; padding: 24px;
+  }
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px;
+    background: linear-gradient(90deg, rgba(255,30,92,0.15), rgba(107,10,36,0.15));
+    border: 1px solid var(--border-glow);
+    border-radius: 18px; margin-bottom: 24px;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header-star {
+    font-size: 22px; color: var(--red-primary);
+    text-shadow: 0 0 12px var(--red-primary);
+    animation: spin 8s linear infinite;
+  }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .header-title { font-size: 16px; font-weight: 800; letter-spacing: 0.2em; color: #fff; }
+  .header-version {
+    font-size: 11px; color: var(--red-glow); font-weight: 700;
+    padding: 3px 10px;
+    background: rgba(255, 30, 92, 0.15);
+    border-radius: 20px;
+    border: 1px solid var(--border-glow);
+  }
+  .logout-btn {
+    padding: 10px 20px;
+    background: rgba(138, 15, 48, 0.6);
+    border: 1px solid var(--border-glow);
+    border-radius: 10px;
+    color: var(--text-pink);
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.15em; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .logout-btn:hover { background: var(--red-soft); color: #fff; }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px; margin-bottom: 24px;
+  }
+  .stat-card {
+    background: linear-gradient(180deg, rgba(13,4,8,0.9), rgba(26,4,8,0.9));
+    border: 1px solid var(--border-soft);
+    border-radius: 16px; padding: 22px 20px;
+    position: relative;
+    transition: all 0.3s;
+  }
+  .stat-card:hover {
+    border-color: var(--red-primary);
+    box-shadow: 0 0 24px rgba(255, 30, 92, 0.25);
+    transform: translateY(-3px);
+  }
+  .stat-label { font-size: 10px; letter-spacing: 0.2em; color: var(--red-glow); font-weight: 700; margin-bottom: 10px; }
+  .stat-value { font-size: 32px; font-weight: 800; color: #fff; text-shadow: 0 0 20px rgba(255, 30, 92, 0.5); }
+  .stat-icon { position: absolute; top: 16px; right: 16px; font-size: 24px; opacity: 0.6; }
+  .actions-bar { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+  .action-btn {
+    padding: 14px 24px;
+    background: linear-gradient(90deg, rgba(255,30,92,0.2), rgba(107,10,36,0.2));
+    border: 1px solid var(--border-glow);
+    border-radius: 12px; color: #fff;
+    font-size: 12px; font-weight: 700;
+    letter-spacing: 0.15em; cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .action-btn:hover {
+    background: linear-gradient(90deg, rgba(255,30,92,0.4), rgba(107,10,36,0.4));
+    box-shadow: 0 0 24px rgba(255, 30, 92, 0.4);
+    transform: translateY(-2px);
+  }
+  .action-btn.primary {
+    background: linear-gradient(90deg, #FF1E5C, #8A0F30);
+    box-shadow: 0 8px 24px rgba(255, 30, 92, 0.4);
+  }
+  .table-container {
+    background: linear-gradient(180deg, rgba(13,4,8,0.9), rgba(26,4,8,0.9));
+    border: 1px solid var(--border-soft);
+    border-radius: 18px; padding: 4px; overflow: hidden;
+  }
+  .table-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px; border-bottom: 1px solid var(--border-soft);
+  }
+  .table-title { font-size: 12px; font-weight: 800; letter-spacing: 0.2em; color: var(--red-glow); }
+  .search-box {
+    background: rgba(26,5,8,0.8);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px; padding: 10px 16px;
+    color: #fff; font-size: 12px; outline: none;
+    width: 240px; transition: all 0.2s;
+  }
+  .search-box:focus { border-color: var(--red-primary); box-shadow: 0 0 16px rgba(255, 30, 92, 0.3); }
+  table { width: 100%; border-collapse: collapse; }
+  thead { background: rgba(255, 30, 92, 0.08); }
+  th {
+    padding: 14px 20px; text-align: left;
+    font-size: 10px; font-weight: 800;
+    letter-spacing: 0.2em; color: var(--red-glow);
+    text-transform: uppercase;
+  }
+  td {
+    padding: 16px 20px; font-size: 13px;
+    color: #fff;
+    border-top: 1px solid rgba(255, 51, 102, 0.1);
+  }
+  tr:hover td { background: rgba(255, 30, 92, 0.05); }
+  .badge {
+    display: inline-block;
+    padding: 5px 12px; border-radius: 20px;
+    font-size: 10px; font-weight: 800;
+    letter-spacing: 0.1em;
+  }
+  .badge.active {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+    border: 1px solid rgba(76, 175, 80, 0.4);
+  }
+  .badge.expired {
+    background: rgba(244, 67, 54, 0.2);
+    color: #F44336;
+    border: 1px solid rgba(244, 67, 54, 0.4);
+  }
+  .badge.banned {
+    background: rgba(138, 15, 48, 0.4);
+    color: var(--red-glow);
+    border: 1px solid var(--red-primary);
+  }
+  .row-actions { display: flex; gap: 8px; }
+  .icon-btn {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border-soft);
+    background: rgba(26,5,8,0.6);
+    color: var(--red-glow);
+    font-size: 14px; cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .icon-btn:hover {
+    background: var(--red-soft);
+    border-color: var(--red-primary);
+    color: #fff;
+    box-shadow: 0 0 16px rgba(255, 30, 92, 0.5);
+  }
+  .empty-state {
+    text-align: center; padding: 60px 20px;
+    color: var(--text-muted); font-size: 13px;
+  }
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(6px);
+    z-index: 100;
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    width: 100%; max-width: 480px;
+    background: linear-gradient(180deg, rgba(13,4,8,0.98), rgba(26,4,8,0.98));
+    border: 2px solid var(--red-primary);
+    border-radius: 22px; padding: 32px;
+    box-shadow: 0 0 60px rgba(255, 30, 92, 0.5);
+    animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.85); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .modal-title { font-size: 16px; font-weight: 800; letter-spacing: 0.2em; color: #fff; text-align: center; margin-bottom: 6px; }
+  .modal-sub { text-align: center; font-size: 11px; color: var(--red-glow); letter-spacing: 0.3em; margin-bottom: 26px; }
+  .modal-actions { display: flex; gap: 12px; margin-top: 24px; }
+  .modal-actions .btn { flex: 1; margin: 0; }
+  .btn-secondary {
+    background: rgba(26,5,8,0.8);
+    border: 1px solid var(--border-soft);
+    color: var(--text-pink);
+  }
+  .btn-secondary:hover { background: rgba(138,15,48,0.4); color: #fff; }
+  .toast {
+    position: fixed;
+    bottom: 30px; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: linear-gradient(180deg, rgba(13,4,8,0.98), rgba(26,4,8,0.98));
+    border: 2px solid var(--red-primary);
+    border-radius: 18px;
+    padding: 16px 26px; color: #fff;
+    font-size: 13px; font-weight: 600;
+    box-shadow: 0 0 40px rgba(255, 30, 92, 0.5);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 999;
+    display: flex; align-items: center; gap: 12px;
+    max-width: 90%;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: #4CAF50; box-shadow: 0 0 40px rgba(76,175,80,0.5); }
+  .toast.error { border-color: #F44336; box-shadow: 0 0 40px rgba(244,67,54,0.5); }
+  .toast-icon { font-size: 20px; color: var(--red-primary); }
+  .loading-spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @media (max-width: 768px) {
+    .header { padding: 16px; flex-wrap: wrap; gap: 12px; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .table-header { flex-direction: column; align-items: stretch; gap: 12px; }
+    .search-box { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="logo-title">THE LION</div>
+    <div class="logo-accent"></div>
+    <div class="logo-sub">ADMIN PANEL</div>
+
+    <div class="field">
+      <label>USERNAME</label>
+      <input type="text" id="loginUser" placeholder="Enter admin username">
+    </div>
+
+    <div class="field">
+      <label>PASSWORD</label>
+      <input type="password" id="loginPass" placeholder="Enter password">
+    </div>
+
+    <button class="btn" id="loginBtn" onclick="doLogin()">▶ LOGIN</button>
+    <div class="error-msg" id="loginError"></div>
+  </div>
+</div>
+
+<div id="dashboard">
+  <div class="header">
+    <div class="header-left">
+      <span class="header-star">✦</span>
+      <span class="header-title">THE LION</span>
+      <span class="header-version">ADMIN</span>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">LOGOUT</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-icon">🔑</div>
+      <div class="stat-label">TOTAL KEYS</div>
+      <div class="stat-value" id="statTotal">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">✅</div>
+      <div class="stat-label">ACTIVE</div>
+      <div class="stat-value" id="statActive">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">❌</div>
+      <div class="stat-label">EXPIRED</div>
+      <div class="stat-value" id="statExpired">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📱</div>
+      <div class="stat-label">BOUND DEVICES</div>
+      <div class="stat-value" id="statBound">0</div>
+    </div>
+  </div>
+
+  <div class="actions-bar">
+    <button class="action-btn primary" onclick="openAddModal()">
+      <span>➕</span> ADD KEY
+    </button>
+    <button class="action-btn" onclick="loadKeys()">
+      <span>🔄</span> REFRESH
+    </button>
+    <button class="action-btn" onclick="exportKeys()">
+      <span>📥</span> EXPORT
+    </button>
+  </div>
+
+  <div class="table-container">
+    <div class="table-header">
+      <span class="table-title">◈ LICENSE KEYS</span>
+      <input type="text" class="search-box" id="searchBox" placeholder="🔍 Search key or device..." oninput="filterKeys()">
+    </div>
+    <div id="tableWrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>Status</th>
+            <th>Expiry</th>
+            <th>Device</th>
+            <th>Logins</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="keysTable">
+          <tr><td colspan="6" class="empty-state">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="keyModal">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">ADD NEW KEY</div>
+    <div class="modal-sub">◈ LICENSE MANAGEMENT ◈</div>
+
+    <div class="field">
+      <label>LICENSE KEY</label>
+      <input type="text" id="keyInput" placeholder="LION-XXXX-XXXX-XXXX">
+    </div>
+
+    <div class="field">
+      <label>STATUS</label>
+      <input type="text" id="statusInput" placeholder="active / banned / expired" value="active">
+    </div>
+
+    <div class="field">
+      <label>EXPIRY DATE</label>
+      <input type="date" id="expiryInput">
+    </div>
+
+    <div class="field">
+      <label>DEVICE ID (optional)</label>
+      <input type="text" id="deviceInput" placeholder="Leave empty for first login bind">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">CANCEL</button>
+      <button class="btn" id="saveKeyBtn" onclick="saveKey()">SAVE</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toastIcon">✦</span>
+  <span id="toastMsg">Welcome</span>
+</div>
+
+<script type="module">
+// ═══════════════════════════════════════════════
+//  FIREBASE IMPORTS — REALTIME DATABASE
+// ═══════════════════════════════════════════════
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import {
+  getDatabase,
+  ref,
+  get,
+  set,
+  update,
+  remove,
+  onValue,
+  query,
+  orderByChild
+} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+import {
+  getAuth,
+  signInAnonymously,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+
+// ═══════════════════════════════════════════════
+//  TUMHARA FIREBASE CONFIG
+// ═══════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyAwAkHEl5pCiQ7KdaTmtrZ-OBL9pFv6aHg",
+  authDomain: "fir-8c71e.firebaseapp.com",
+  databaseURL: "https://fir-8c71e-default-rtdb.firebaseio.com",
+  projectId: "fir-8c71e",
+  storageBucket: "fir-8c71e.firebasestorage.app",
+  messagingSenderId: "848454781583",
+  appId: "1:848454781583:web:573d5bd4b3963f02c13efa",
+  measurementId: "G-ENYP1PJHPB"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
+
+// ═══════════════════════════════════════════════
+//  ADMIN CREDENTIALS
+// ═══════════════════════════════════════════════
+const ADMIN_USER = "lion_admin";
+const ADMIN_PASS = "LionCheats@2026";
+
+let currentEditKey = null;
+let allKeys = [];
+let authReady = false;
+
+// ═══════════════════════════════════════════════
+//  ANONYMOUS AUTH (for admin write access)
+// ═══════════════════════════════════════════════
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    console.log('Auth ready:', user.uid);
+    authReady = true;
+  } else {
+    console.log('Signing in anonymously...');
+    signInAnonymously(auth).catch(e => console.error('Auth error:', e));
+  }
+});
+
+// ═══════════════════════════════════════════════
+//  LOGIN
+// ═══════════════════════════════════════════════
+window.doLogin = function() {
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+
+  if (!user || !pass) {
+    err.textContent = 'Please enter username & password';
+    return;
+  }
+
+  btn.classList.add('loading');
+  btn.innerHTML = '<span class="loading-spinner"></span>';
+
+  setTimeout(() => {
+    if (user === ADMIN_USER && pass === ADMIN_PASS) {
+      err.textContent = '';
+      localStorage.setItem('lion_admin_logged', '1');
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      loadKeys();
+      showToast('Welcome, Admin!', 'success');
+    } else {
+      err.textContent = 'Invalid credentials';
+      btn.classList.remove('loading');
+      btn.innerHTML = '▶ LOGIN';
+    }
+  }, 700);
+};
+
+window.doLogout = function() {
+  localStorage.removeItem('lion_admin_logged');
+  location.reload();
+};
+
+// ═══════════════════════════════════════════════
+//  LOAD KEYS — Realtime DB
+// ═══════════════════════════════════════════════
+window.loadKeys = async function() {
+  const tbody = document.getElementById('keysTable');
+  tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><span class="loading-spinner"></span> Loading...</td></tr>';
+
+  try {
+    const snapshot = await get(ref(db, 'licenses'));
+    allKeys = [];
+
+    if (snapshot.exists()) {
+      const data = snapshot.val();
+      Object.keys(data).forEach(key => {
+        allKeys.push({ id: key, ...data[key] });
+      });
+    }
+
+    // sort by createdAt desc
+    allKeys.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+    renderKeys(allKeys);
+    updateStats();
+
+  } catch (e) {
+    console.error(e);
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Error: ' + e.message + '</td></tr>';
+    showToast('Failed to load: ' + e.message, 'error');
+  }
+};
+
+function renderKeys(keys) {
+  const tbody = document.getElementById('keysTable');
+
+  if (keys.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No keys found. Click "ADD KEY" to create one.</td></tr>';
+    return;
+  }
+
+  const now = Date.now();
+
+  tbody.innerHTML = keys.map(k => {
+    const expiry = k.expiry || 0;
+    const isExpired = expiry < now;
+    const status = k.status || 'active';
+
+    let badgeClass = 'active';
+    let badgeText = 'ACTIVE';
+    if (status === 'banned') {
+      badgeClass = 'banned';
+      badgeText = 'BANNED';
+    } else if (isExpired) {
+      badgeClass = 'expired';
+      badgeText = 'EXPIRED';
+    }
+
+    const expiryDate = expiry
+      ? new Date(expiry).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+      : '—';
+
+    const device = k.deviceID ? k.deviceID.substring(0, 12) + '...' : '—';
+    const logins = k.loginCount || 0;
+
+    return `
+      <tr>
+        <td><code style="color: #FF4D79; font-size: 11px;">${k.id}</code></td>
+        <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+        <td>${expiryDate}</td>
+        <td><code style="color: #B38A9A; font-size: 11px;">${device}</code></td>
+        <td>${logins}</td>
+        <td>
+          <div class="row-actions">
+            <button class="icon-btn" onclick="editKey('${k.id}')" title="Edit">✎</button>
+            <button class="icon-btn" onclick="deleteKey('${k.id}')" title="Delete">🗑</button>
+            <button class="icon-btn" onclick="resetDevice('${k.id}')" title="Reset device">↻</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  STATS
+// ═══════════════════════════════════════════════
+function updateStats() {
+  const now = Date.now();
+  let active = 0, expired = 0, bound = 0;
+
+  allKeys.forEach(k => {
+    if (k.status === 'banned') return;
+    if ((k.expiry || 0) < now) expired++;
+    else active++;
+    if (k.deviceID) bound++;
+  });
+
+  document.getElementById('statTotal').textContent = allKeys.length;
+  document.getElementById('statActive').textContent = active;
+  document.getElementById('statExpired').textContent = expired;
+  document.getElementById('statBound').textContent = bound;
+}
+
+// ═══════════════════════════════════════════════
+//  SEARCH
+// ═══════════════════════════════════════════════
+window.filterKeys = function() {
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  if (!q) { renderKeys(allKeys); return; }
+
+  const filtered = allKeys.filter(k =>
+    k.id.toLowerCase().includes(q) ||
+    (k.deviceID || '').toLowerCase().includes(q)
+  );
+  renderKeys(filtered);
+};
+
+// ═══════════════════════════════════════════════
+//  ADD / EDIT
+// ═══════════════════════════════════════════════
+window.openAddModal = function() {
+  currentEditKey = null;
+  document.getElementById('modalTitle').textContent = 'ADD NEW KEY';
+  document.getElementById('keyInput').value = 'LION-' + generateRandom(4) + '-' + generateRandom(4) + '-' + generateRandom(4);
+  document.getElementById('keyInput').disabled = false;
+  document.getElementById('statusInput').value = 'active';
+  document.getElementById('expiryInput').value = getDatePlusDays(30);
+  document.getElementById('deviceInput').value = '';
+  document.getElementById('keyModal').classList.add('active');
+};
+
+window.editKey = function(id) {
+  const k = allKeys.find(x => x.id === id);
+  if (!k) return;
+
+  currentEditKey = id;
+  document.getElementById('modalTitle').textContent = 'EDIT KEY';
+  document.getElementById('keyInput').value = id;
+  document.getElementById('keyInput').disabled = true;
+  document.getElementById('statusInput').value = k.status || 'active';
+
+  if (k.expiry) {
+    const d = new Date(k.expiry);
+    document.getElementById('expiryInput').value = d.toISOString().split('T')[0];
+  } else {
+    document.getElementById('expiryInput').value = getDatePlusDays(30);
+  }
+
+  document.getElementById('deviceInput').value = k.deviceID || '';
+  document.getElementById('keyModal').classList.add('active');
+};
+
+window.closeModal = function() {
+  document.getElementById('keyModal').classList.remove('active');
+  currentEditKey = null;
+};
+
+window.saveKey = async function() {
+  const key = document.getElementById('keyInput').value.trim().toUpperCase();
+  const status = document.getElementById('statusInput').value.trim() || 'active';
+  const expiryDate = document.getElementById('expiryInput').value;
+  const device = document.getElementById('deviceInput').value.trim();
+
+  if (!key) { showToast('Key required', 'error'); return; }
+  if (!expiryDate) { showToast('Expiry date required', 'error'); return; }
+
+  const btn = document.getElementById('saveKeyBtn');
+  btn.classList.add('loading');
+  btn.innerHTML = '<span class="loading-spinner"></span>';
+
+  try {
+    const expiryTs = new Date(expiryDate).getTime();
+
+    if (currentEditKey) {
+      // Update existing
+      await update(ref(db, 'licenses/' + currentEditKey), {
+        status,
+        expiry: expiryTs,
+        deviceID: device,
+      });
+      showToast('Key updated successfully', 'success');
+    } else {
+      // Add new
+      const docRef = ref(db, 'licenses/' + key);
+      const existing = await get(docRef);
+      if (existing.exists()) {
+        showToast('Key already exists!', 'error');
+        btn.classList.remove('loading');
+        btn.innerHTML = 'SAVE';
+        return;
+      }
+
+      await set(docRef, {
+        status,
+        expiry: expiryTs,
+        deviceID: device,
+        loginCount: 0,
+        createdAt: Date.now(),
+      });
+      showToast('Key added successfully', 'success');
+    }
+
+    closeModal();
+    loadKeys();
+  } catch (e) {
+    console.error(e);
+    showToast('Failed: ' + e.message, 'error');
+  }
+
+  btn.classList.remove('loading');
+  btn.innerHTML = 'SAVE';
+};
+
+// ═══════════════════════════════════════════════
+//  DELETE
+// ═══════════════════════════════════════════════
+window.deleteKey = async function(id) {
+  if (!confirm('Delete key:\n' + id + '?')) return;
+
+  try {
+    await remove(ref(db, 'licenses/' + id));
+    showToast('Key deleted', 'success');
+    loadKeys();
+  } catch (e) {
+    showToast('Failed: ' + e.message, 'error');
+  }
+};
+
+window.resetDevice = async function(id) {
+  if (!confirm('Reset device binding for:\n' + id + '?')) return;
+
+  try {
+    await update(ref(db, 'licenses/' + id), {
+      deviceID: '',
+    });
+    showToast('Device reset — user can login on new device', 'success');
+    loadKeys();
+  } catch (e) {
+    showToast('Failed: ' + e.message, 'error');
+  }
+};
+
+// ═══════════════════════════════════════════════
+//  EXPORT
+// ═══════════════════════════════════════════════
+window.exportKeys = function() {
+  const data = JSON.stringify(allKeys, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'lion-keys-' + Date.now() + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Exported ' + allKeys.length + ' keys', 'success');
+};
+
+// ═══════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════
+function generateRandom(len) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let out = '';
+  for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
+
+function getDatePlusDays(days) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+function showToast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  const icon = document.getElementById('toastIcon');
+  const txt = document.getElementById('toastMsg');
+
+  txt.textContent = msg;
+  t.className = 'toast ' + type;
+
+  if (type === 'success') icon.textContent = '✓';
+  else if (type === 'error') icon.textContent = '✕';
+  else icon.textContent = '✦';
+
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// ═══════════════════════════════════════════════
+//  AUTO LOGIN
+// ═══════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  if (localStorage.getItem('lion_admin_logged') === '1') {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    loadKeys();
+  }
+
+  document.getElementById('loginPass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+});
+</script>
+
+</body>
+</html>
